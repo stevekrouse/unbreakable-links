@@ -3,12 +3,7 @@ const repoPathFromScriptAttribute = () => {
   return currentScript.getAttribute('repoPath')
 }
 
-const commitHashInURL = window.location.hash.slice(1)
-const filePath = window.location.pathname
-const repoPath = repoPathFromScriptAttribute() // TODO throw error if undefined
-
-
-const load = (filePath, commitHash) => {
+const load = (repoPath, filePath, commitHash) => {
   const iframe = document.createElement("iframe")
   iframe.src = "https://cdn.rawgit.com/" + repoPath + "/" + commitHash + "/" + filePath
   iframe.height = "100%"
@@ -21,7 +16,7 @@ const putCommitHashInURL = commitHash => {
   window.location.hash = commitHash
 }
 
-const getMostRecentCommitHash = () => fetch(
+const getMostRecentCommitHash = repoPath => fetch(
   'https://exec.clay.run/steve/github-project-data', {
     method: "POST",
     body: JSON.stringify({
@@ -32,9 +27,15 @@ const getMostRecentCommitHash = () => fetch(
   .then(json => json[0].sha)
 
 window.addEventListener("load", () => {
+  const commitHashInURL = window.location.hash.slice(1)
+  const repoPath = repoPathFromScriptAttribute() // TODO throw error if undefined
+  const [userName, repoName] = repoPath.split("/")
+  const repoNameIndexInURLPath = window.location.pathname.indexOf(repoName + "/")
+  const filePath = repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + repoName.length + 1)
+
   if (commitHashInURL) {
-    load(filePath, commitHashInURL)
+    load(repoPath, filePath, commitHashInURL)
   } else {
-    getMostRecentCommitHash().then(putCommitHashInURL)
+    getMostRecentCommitHash(repoPath).then(putCommitHashInURL)
   }
 })
