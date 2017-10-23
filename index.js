@@ -47,7 +47,7 @@ window.addEventListener("load", () => {
   const filePath = repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + repoName.length + 1)
 
   getMostRecentCommitHash(repoPath, filePath).then(mostRecentCommitHash => {
-    load(repoPath, filePath, commitHashInURL)
+    // TODO detect if page was deleted and pull the commit hash before the most recent
     if (!commitHashInURL) {
       putCommitHashInURL(mostRecentCommitHash)
       load(repoPath, filePath, mostRecentCommitHash)
