@@ -1,7 +1,6 @@
 const repoPathFromScriptAttribute = () => {
-  // find the current script tag in the page
-  var currentScript = document.currentScript || Array.prototype.slice.call(document.getElementsByTagName('script')).find(s => s.src.includes('unbreakable-links'))
-  return JSON.parse(currentScript.getAttribute('repoPath'))
+  const currentScript = document.currentScript || Array.prototype.slice.call(document.getElementsByTagName('script')).find(s => s.src.includes('unbreakable-links'))
+  return currentScript.getAttribute('repoPath')
 }
 
 const commitHashInURL = window.location.hash.slice(1)
@@ -32,9 +31,10 @@ const getMostRecentCommitHash = () => fetch(
   .then(response => response.json())
   .then(json => json[0].sha)
 
-// TODO do this on page load
-if (commitHashInURL) {
-  load(filePath, commitHashInURL)
-} else {
-  getMostRecentCommitHash().then(putCommitHashInURL)
-}
+window.addEventListener("load", () => {
+  if (commitHashInURL) {
+    load(filePath, commitHashInURL)
+  } else {
+    getMostRecentCommitHash().then(putCommitHashInURL)
+  }
+})
