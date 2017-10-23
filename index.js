@@ -31,7 +31,10 @@ const getMostRecentCommitHash = repoPath => fetch(
 
 window.addEventListener("load", () => {
   const commitHashInURL = window.location.hash.slice(1)
-  const repoPath = repoPathFromScriptAttribute() // TODO throw error if undefined
+  const repoPath = repoPathFromScriptAttribute()
+  if (!repoPath || !repoPath.includes("/")) {
+    throw new Error('You need to add a repoPath="" attribute with a valid github repo path to the <script> tag that contains this library. For example for http://github.com/stevekrouse/unbreakable-links, it would be repoPath="stevekrouse/unbreakable-links".') 
+  }
   const [userName, repoName] = repoPath.split("/")
   const repoNameIndexInURLPath = window.location.pathname.indexOf(repoName + "/")
   const filePath = repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + repoName.length + 1)
