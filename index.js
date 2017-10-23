@@ -33,7 +33,7 @@ const getMostRecentCommitHash = (repoPath, filePath) => fetch(
 
 
 const showBanner = (repoPath, filePath, status) => {
-  
+  // TODO 
 }
 
 window.addEventListener("load", () => {
@@ -47,17 +47,16 @@ window.addEventListener("load", () => {
   const filePath = repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + repoName.length + 1)
 
   getMostRecentCommitHash(repoPath, filePath).then(mostRecentCommitHash => {
-    if (commitHashInURL && commitHashInURL != mostRecentCommitHash) {
-      load(repoPath, filePath, commitHashInURL)
+    load(repoPath, filePath, commitHashInURL)
+    if (!commitHashInURL) {
+      putCommitHashInURL(mostRecentCommitHash)
+      showBanner(repoPath, filePath, "UP-TO-DATE")
+    } else if (commitHashInURL != mostRecentCommitHash) {
       showBanner(repoPath, filePath, "NEWER-VERSION-AVAILABLE")
     } else {
-      if (!commitHashInURL) {
-        putCommitHashInURL(mostRecentCommitHash)
-      }
       showBanner(repoPath, filePath, "UP-TO-DATE")
     }
   }).catch(() => {
-    // we will end up here on 404.html 
-    // if there's never been such a filePath on this repoName
+    showBanner(repoPath, filePath, "FILE-NEVER-EXISTED")
   })
 })
