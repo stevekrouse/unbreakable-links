@@ -46,7 +46,7 @@ window.addEventListener("load", () => {
   const repoNameIndexInURLPath = window.location.pathname.indexOf(repoName + "/")
   const filePath = repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + repoName.length + 1)
 
-  getMostRecentCommitHash.then(mostRecentCommitHash => {
+  getMostRecentCommitHash(repoPath, filePath).then(mostRecentCommitHash => {
     if (commitHashInURL && commitHashInURL != mostRecentCommitHash) {
       load(repoPath, filePath, commitHashInURL)
       showBanner(repoPath, filePath, "NEWER-VERSION-AVAILABLE")
