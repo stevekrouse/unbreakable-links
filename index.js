@@ -50,10 +50,13 @@ window.addEventListener("load", () => {
     load(repoPath, filePath, commitHashInURL)
     if (!commitHashInURL) {
       putCommitHashInURL(mostRecentCommitHash)
+      load(repoPath, filePath, mostRecentCommitHash)
       showBanner(repoPath, filePath, "UP-TO-DATE")
     } else if (commitHashInURL != mostRecentCommitHash) {
+      load(repoPath, filePath, commitHashInURL)
       showBanner(repoPath, filePath, "NEWER-VERSION-AVAILABLE")
     } else {
+      load(repoPath, filePath, commitHashInURL)
       showBanner(repoPath, filePath, "UP-TO-DATE")
     }
   }).catch(() => {
