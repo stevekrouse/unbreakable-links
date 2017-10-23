@@ -8,7 +8,10 @@ const load = (repoPath, filePath, commitHash) => {
   iframe.src = "https://cdn.rawgit.com/" + repoPath + "/" + commitHash + "/" + filePath
   iframe.height = "100%"
   iframe.width = "100%"
-  // TODO make iframe styles go away
+  iframe.styles.border = "none"
+  iframe.styles.padding = "none"
+  iframe.styles.margin = "none"
+  document.body.innerHTML = '';
   document.body.appendChild(iframe)
 }
 
