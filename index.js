@@ -9,10 +9,6 @@ const load = (repoPath, filePath, commitHash) => {
   iframe.height = "100%"
   iframe.width = "100%"
   iframe.style.border = "none"
-  iframe.onerror = error => {
-    // 404 error if page deleted
-    console.log(error)
-  }
   document.body.style.margin = "0px"
   document.body.innerHTML = '';
   document.body.appendChild(iframe)
@@ -22,7 +18,7 @@ const putCommitHashInURL = commitHash => {
   window.location.hash = commitHash
 }
 
-const getMostRecentCommitHash = (repoPath, filePath) => fetch(
+const getMostRecentCommitHashes = (repoPath, filePath) => fetch(
   'https://exec.clay.run/steve/github-project-data', {
     method: "POST",
     body: JSON.stringify({
@@ -31,10 +27,21 @@ const getMostRecentCommitHash = (repoPath, filePath) => fetch(
     })
   })
   .then(response => response.json())
-  .then(json => json[0].sha)
+  .catch(() => null)
 
 
-
+const getFileExists = (repoPath, filePath) => fetch(
+  'https://exec.clay.run/steve/github-file-contents', {
+    method: "POST",
+    body: JSON.stringify({
+      repo: repoPath,
+      path: filePath
+    })
+  })
+  .then(() => true)
+  .catch(() => false)
+  
+  
 
 const showBanner = (repoPath, filePath, status) => {
   // TODO 
@@ -50,20 +57,30 @@ window.addEventListener("load", () => {
   const repoNameIndexInURLPath = window.location.pathname.indexOf(repoName + "/")
   const filePath = repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + repoName.length + 1)
 
-  getMostRecentCommitHash(repoPath, filePath).then(mostRecentCommitHash => {
-    // TODO detect if page was deleted and pull the commit hash before the most recent
-    if (!commitHashInURL) {
-      putCommitHashInURL(mostRecentCommitHash)
-      load(repoPath, filePath, mostRecentCommitHash)
-      showBanner(repoPath, filePath, "UP-TO-DATE")
-    } else if (commitHashInURL != mostRecentCommitHash) {
-      load(repoPath, filePath, commitHashInURL)
-      showBanner(repoPath, filePath, "NEWER-VERSION-AVAILABLE")
+  Promise.all([getMostRecentCommitHashes(repoPath, filePath), getFileExists(repoPath, filePath)]).then(([mostRecentCommitHashes, fileExists]) => {
+    if (mostRecentCommitHashes == null) {
+      showBanner(repoPath, filePath, "FILE-NEVER-EXISTED")
     } else {
-      load(repoPath, filePath, commitHashInURL)
-      showBanner(repoPath, filePath, "UP-TO-DATE")
+      if (fileExists) {
+        const mostRecentCommitHash = mostRecentCommitHashes[0].sha
+        if (!commitHashInURL) {
+          putCommitHashInURL(mostRecentCommitHash)
+          load(repoPath, filePath, mostRecentCommitHash)
+          showBanner(repoPath, filePath, "UP-TO-DATE")
+        } else if (commitHashInURL != mostRecentCommitHash) {
+          load(repoPath, filePath, commitHashInURL)
+          showBanner(repoPath, filePath, "NEWER-VERSION-AVAILABLE")
+        } else {
+          load(repoPath, filePath, commitHashInURL)
+          showBanner(repoPath, filePath, "UP-TO-DATE")
+        }
+      } else {
+        const mostRecentCommitHash = mostRecentCommitHashes[1].sha
+        putCommitHashInURL(mostRecentCommitHash)
+        load(repoPath, filePath, mostRecentCommitHash)
+        showBanner(repoPath, filePath, "DELETED")
+      } 
     }
-  }).catch(() => {
-    showBanner(repoPath, filePath, "FILE-NEVER-EXISTED")
   })
+
 })
