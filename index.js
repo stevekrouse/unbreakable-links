@@ -9,6 +9,10 @@ const load = (repoPath, filePath, commitHash) => {
   iframe.height = "100%"
   iframe.width = "100%"
   iframe.style.border = "none"
+  iframe.onerror = error => {
+    // 404 error if page deleted
+    console.log(error)
+  }
   document.body.style.margin = "0px"
   document.body.innerHTML = '';
   document.body.appendChild(iframe)
