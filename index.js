@@ -51,7 +51,7 @@ window.addEventListener("load", () => {
   const filePath = repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + repoName.length + 1)
 
   Promise.all([getMostRecentCommitHashes(repoPath, filePath), getFileExistsNow(repoPath, filePath)]).then(([mostRecentCommitHashes, fileExists]) => {
-    if (!mostRecentCommitHashes) {
+    if (mostRecentCommitHashes.length === 0) {
       showBanner(repoPath, filePath, "FILE-NEVER-EXISTED")
     } else {
       if (fileExists) {
