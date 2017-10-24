@@ -3,9 +3,11 @@ const repoPathFromScriptAttribute = () => {
   return currentScript.getAttribute('repoPath')
 }
 
+const rawGitLink = (repoPath, filePath, commitHash) => "https://cdn.rawgit.com/" + repoPath + "/" + (commitHash ? commitHash : "master") + "/" + filePath
+
 const load = (repoPath, filePath, commitHash) => {
   const iframe = document.createElement("iframe")
-  iframe.src = "https://cdn.rawgit.com/" + repoPath + "/" + commitHash + "/" + filePath
+  iframe.src = rawGitLink(repoPath, filePath, commitHash)
   iframe.height = "100%"
   iframe.width = "100%"
   iframe.style.border = "none"
@@ -27,21 +29,12 @@ const getMostRecentCommitHashes = (repoPath, filePath) => fetch(
     })
   })
   .then(response => response.json())
-  .catch(() => null)
 
-
-const getFileExists = (repoPath, filePath) => fetch(
-  'https://exec.clay.run/steve/github-file-contents', {
-    method: "POST",
-    body: JSON.stringify({
-      repo: repoPath,
-      path: filePath
-    })
+const getFileExistsNow = (repoPath, filePath) => fetch(
+  rawGitLink(repoPath, filePath), {
+    method: "GET"
   })
-  .then(() => true)
-  .catch(() => false)
-  
-  
+  .then(resp => resp.status == 200)
 
 const showBanner = (repoPath, filePath, status) => {
   // TODO 
@@ -57,8 +50,8 @@ window.addEventListener("load", () => {
   const repoNameIndexInURLPath = window.location.pathname.indexOf(repoName + "/")
   const filePath = repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + repoName.length + 1)
 
-  Promise.all([getMostRecentCommitHashes(repoPath, filePath), getFileExists(repoPath, filePath)]).then(([mostRecentCommitHashes, fileExists]) => {
-    if (mostRecentCommitHashes == null) {
+  Promise.all([getMostRecentCommitHashes(repoPath, filePath), getFileExistsNow(repoPath, filePath)]).then(([mostRecentCommitHashes, fileExists]) => {
+    if (!mostRecentCommitHashes) {
       showBanner(repoPath, filePath, "FILE-NEVER-EXISTED")
     } else {
       if (fileExists) {
