@@ -37,7 +37,7 @@ const getFileExistsNow = (repoPath, filePath) => fetch(
   .then(resp => resp.status == 200)
 
 const showBanner = (repoPath, filePath, status) => {
-  // TODO 
+  // TODO https://github.com/stevekrouse/unbreakable-links/issues/2
 }
 
 window.addEventListener("load", () => {
@@ -64,7 +64,7 @@ window.addEventListener("load", () => {
           load(repoPath, filePath, commitHashInURL)
           showBanner(repoPath, filePath, "NEWER-VERSION-AVAILABLE")
         } else {
-          load(repoPath, filePath, commitHashInURL)
+          load(repoPath, filePath, commitHashInURL) // potentially we don't need to load when we're already on the most recent version
           showBanner(repoPath, filePath, "UP-TO-DATE")
         }
       } else {
