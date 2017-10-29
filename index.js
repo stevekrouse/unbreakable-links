@@ -11,7 +11,7 @@ const load = (repoPath, filePath, commitHash) => {
   iframe.height = "100%"
   iframe.width = "100%"
   iframe.style.border = "none"
-  document.body.style.margin = "0px"
+  document.body.style.margin = "50 0 0 0px"
   document.body.innerHTML = '';
   document.body.appendChild(iframe)
 }
@@ -38,6 +38,31 @@ const getFileExistsNow = (repoPath, filePath) => fetch(
 
 const showBanner = (repoPath, filePath, status) => {
   // TODO https://github.com/stevekrouse/unbreakable-links/issues/2
+  const bannerText = {
+    "FILE-NEVER-EXISTED": `There is not, nor has there ever been, a file associated with this path: <code>${filePath}</code>`,
+    "UP-TO-DATE": `You are viewing the most recent version of this file.`,
+    "NEWER-VERSION-AVAILABLE": `There is a newer version of this file available.`,
+    "DELETED": "This file has been deleted. You are viewing an archived version."
+  }[status]
+  const bannerCSS = [
+    "z-index:2", 
+    "position:absolute", 
+    "top:0px", 
+    "width:100%",
+    "height: 50px",
+    "display: flex",
+    "align-items: center",
+    "justify-content: center",
+    "border: 1px solid lightcyan",
+    "background-color: lightblue",
+    "font-family: sans-serif"
+ ]
+  const bannerHTML = `<div style="${bannerCSS.join(";")}">
+     <div>
+       ${bannerText}
+     </div>
+   </div>`
+  document.body.innerHTML += bannerHTML
 }
 
 window.addEventListener("load", () => {
@@ -71,6 +96,7 @@ window.addEventListener("load", () => {
         const mostRecentCommitHash = mostRecentCommitHashes[1].sha
         putCommitHashInURL(mostRecentCommitHash)
         load(repoPath, filePath, mostRecentCommitHash)
+        // TODO check if this is there is a more recent version
         showBanner(repoPath, filePath, "DELETED")
       } 
     }
