@@ -13,6 +13,7 @@ const repoPathFromScriptAttribute = () => {
 const rawGitLink = (repoPath, filePath, commitHash) => "https://cdn.rawgit.com/" + repoPath + "/" + (commitHash ? commitHash : "master") + "/" + filePath
 
 const load = (repoPath, filePath, commitHash) => {
+  document.body.style.margin = "0 0 0 0px"
   const iframe = document.createElement("iframe")
   iframe.src = rawGitLink(repoPath, filePath, commitHash)
   iframe.style.height = "100%"
@@ -24,10 +25,11 @@ const load = (repoPath, filePath, commitHash) => {
 }
 
 const putCommitHashInURL = commitHash => {
+  // TODO https://github.com/stevekrouse/unbreakable-links/issues/1
   window.location.hash = commitHash
 }
 
-const getMostRecentCommitHashes = (repoPath, filePath) => fetch(
+const getMostRecentCommits = (repoPath, filePath) => fetch(
   'https://exec.clay.run/steve/github-project-data', {
     method: "POST",
     body: JSON.stringify({
@@ -82,6 +84,8 @@ const showBanner = (repoPath, filePath, status) => {
   document.body.innerHTML += bannerHTML
 }
 
+
+
 window.addEventListener("load", () => {
   // do nothing if this library is being loaded inside itself
   if (window.frameElement && window.frameElement.classList.contains('unbreakable-links')) { return }
@@ -95,25 +99,28 @@ window.addEventListener("load", () => {
   const repoNameIndexInURLPath = window.location.pathname.indexOf(repoName + "/")
   const filePath = repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + repoName.length + 1)
 
-  Promise.all([getMostRecentCommitHashes(repoPath, filePath), getFileExistsNow(repoPath, filePath)]).then(([mostRecentCommitHashes, fileExists]) => {
-    if (mostRecentCommitHashes.length === 0) {
+  const requests = [getMostRecentCommits(repoPath), getMostRecentCommits(repoPath, filePath), getFileExistsNow(repoPath, filePath)]
+  Promise.all(requests).then(([mostRecentCommits, mostRecentFileCommits, fileExists]) => {
+    if (mostRecentFileCommits.length === 0) {
       showBanner(repoPath, filePath, "FILE-NEVER-EXISTED")
     } else {
       if (fileExists) {
-        const mostRecentCommitHash = mostRecentCommitHashes[0].sha
+        const mostRecentCommitHash = mostRecentCommits[0].sha
+        const mostRecentFileCommitHash = mostRecentFileCommits[0].sha
         if (!commitHashInURL) {
           putCommitHashInURL(mostRecentCommitHash)
           load(repoPath, filePath, mostRecentCommitHash)
           showBanner(repoPath, filePath, "UP-TO-DATE")
-        } else if (commitHashInURL != mostRecentCommitHash) {
+        } else if (commitHashInURL != mostRecentFileCommitHash && !mostRecentCommits.slice(mostRecentCommits.map(c => c.sha).indexOf(mostRecentFileCommitHash)).includes(commitHashInURL)) {
           load(repoPath, filePath, commitHashInURL)
           showBanner(repoPath, filePath, "NEWER-VERSION-AVAILABLE")
         } else {
-          load(repoPath, filePath, commitHashInURL) // potentially we don't need to load when we're already on the most recent version
+          // we load even when we technically don't need to here for consistancy
+          load(repoPath, filePath, commitHashInURL)
           showBanner(repoPath, filePath, "UP-TO-DATE")
         }
       } else {
-        const mostRecentCommitHash = mostRecentCommitHashes[1].sha
+        const mostRecentCommitHash = mostRecentCommits[1].sha
         putCommitHashInURL(mostRecentCommitHash)
         load(repoPath, filePath, mostRecentCommitHash)
         // TODO check if this is there is a more recent version
