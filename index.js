@@ -82,7 +82,7 @@ const showBanner = (repoPath, filePath, status) => {
 
 window.addEventListener("load", () => {
   // do nothing if this library is being loaded inside itself
-  if (window.frameElement.classList.includes('unbreakable-links')) { return }
+  if (window.frameElement && window.frameElement.classList.contains('unbreakable-links')) { return }
   
   const commitHashInURL = window.location.hash.slice(1)
   const repoPath = repoPathFromScriptAttribute()
