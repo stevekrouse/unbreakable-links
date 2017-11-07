@@ -16,6 +16,7 @@ const load = (repoPath, filePath, commitHash) => {
   iframe.style.height = "100%"
   iframe.style.width = "100%"
   iframe.style.border = "none"
+  iframe.classList.add('unbreakable-links')
   document.body.innerHTML = '';
   document.body.appendChild(iframe)
 }
@@ -80,6 +81,9 @@ const showBanner = (repoPath, filePath, status) => {
 }
 
 window.addEventListener("load", () => {
+  // do nothing if this library is being loaded inside itself
+  if (window.frameElement.classList.includes('unbreakable-links')) { return }
+  
   const commitHashInURL = window.location.hash.slice(1)
   const repoPath = repoPathFromScriptAttribute()
   if (!repoPath || !repoPath.includes("/")) {
