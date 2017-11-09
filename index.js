@@ -28,7 +28,9 @@ const load = (repoPath, filePath, commitHash) => {
 const putCommitHashInURL = commitHash => {
   const searchParams = new URLSearchParams()
   searchParams.set("version", commitHash)
-  window.location.search = searchParams.toString()
+  const urlWithoutSearch = window.location.toString().replace(window.location.search, "")
+  const newURL = urlWithoutSearch + searchParams.toString()
+  window.history.replaceState({}, null, newURL) // so as to now cause page to reload
 }
 
 const getMostRecentCommits = (repoPath, filePath) => fetch(
