@@ -25,8 +25,9 @@ const load = (repoPath, filePath, commitHash) => {
 }
 
 const putCommitHashInURL = commitHash => {
-  // TODO https://github.com/stevekrouse/unbreakable-links/issues/1
-  window.location.hash = commitHash
+  const searchParams = new URLSearchParams()
+  searchParams.set("version", commitHash)
+  window.location.search = searchParams.toString()
 }
 
 const getMostRecentCommits = (repoPath, filePath) => fetch(
@@ -90,7 +91,7 @@ window.addEventListener("load", () => {
   // do nothing if this library is being loaded inside itself
   if (window.frameElement && window.frameElement.classList.contains('unbreakable-links')) { return }
   
-  const commitHashInURL = window.location.hash.slice(1)
+  const commitHashInURL = new URLSearchParams(window.location.search).get("version")
   const repoPath = repoPathFromScriptAttribute()
   if (!repoPath || !repoPath.includes("/")) {
     throw new Error('You need to add a repoPath="" attribute with a valid github repo path to the <script> tag that contains this library. For example for http://github.com/stevekrouse/unbreakable-links, it would be repoPath="stevekrouse/unbreakable-links".') 
