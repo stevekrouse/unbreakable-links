@@ -13,6 +13,7 @@ const repoPathFromScriptAttribute = () => {
 const rawGitLink = (repoPath, filePath, commitHash) => "https://cdn.rawgit.com/" + repoPath + "/" + (commitHash ? commitHash : "master") + "/" + filePath
 
 const load = (repoPath, filePath, commitHash) => {
+  return // disabled for now
   document.body.style.margin = "0 0 0 0px"
   const iframe = document.createElement("iframe")
   iframe.src = rawGitLink(repoPath, filePath, commitHash)
@@ -46,13 +47,17 @@ const getFileExistsNow = (repoPath, filePath) => fetch(
   })
   .then(resp => resp.status == 200)
 
-const showBanner = (repoPath, filePath, status) => {
-  // TODO https://github.com/stevekrouse/unbreakable-links/issues/2
+const showBanner = (repoPath, filePath, status, newCommitHash) => {
+  return // disabled for now
+  // TODO add links to newCommitHash page in banner text
+  const onclick = `onclick="window.location.search = '?version=${newCommitHash}'"`
   const bannerText = {
-    "FILE-NEVER-EXISTED": `There is not, nor has there ever been, a file associated with this path: <code>${filePath}</code>`,
-    "UP-TO-DATE": `You are viewing the most recent version of this file.`,
-    "NEWER-VERSION-AVAILABLE": `There is a newer version of this file available.`,
-    "DELETED": "This file has been deleted. You are viewing an archived version."
+    "FILE-NEVER-EXISTED": `This page doesn't exist in our archives.`,
+    "UP-TO-DATE": `This is the most recent version of this page.`,
+    "NEWER-VERSION-PAGE-AVAILABLE": `There is <a ${onclick}>a newer version of this page</a>.`,
+    "NEWER-VERSION-SITE-AVAILABLE": `This is the most recent version of this page, but there is <a ${onclick}>a new version of the site</a>.`,
+    "DELETED-MOST-RECENT": "This page has been deleted. You are viewing the most-up-to-date archived version.",
+    "NEWER-VERSION-DELETED-AVAILABLE": `This page has been deleted, but this is not <a ${onclick}>the most up-to-date version in the archive</a>.`
   }[status]
   
   const iconDiv = document.createElement('span')
@@ -61,8 +66,10 @@ const showBanner = (repoPath, filePath, status) => {
   iconDiv.innerHTML = {
     "FILE-NEVER-EXISTED": neverExistedFileSVGText,
     "UP-TO-DATE": upToDateFileSVGText, 
-    "NEWER-VERSION-AVAILABLE": newerVersionAvailFileSvgText, 
-    "DELETED": deletedFileSVGText
+    "NEWER-VERSION-PAGE-AVAILABLE": newerVersionAvailFileSvgText, 
+    "NEWER-VERSION-SITE-AVAILABLE": newerVersionAvailFileSvgText, 
+    "DELETED-MOST-RECENT": deletedFileSVGText,
+    "NEWER-VERSION-DELETED-AVAILABLE": deletedFileSVGText
   }[status]
   const bannerCSS = [
     "z-index:2", 
@@ -85,49 +92,89 @@ const showBanner = (repoPath, filePath, status) => {
   document.body.innerHTML += bannerHTML
 }
 
-
+const filePathFromRepoPath = repoPath => {
+  const [userName, repoName] = repoPath.split("/")
+  const repoNameIndexInURLPath = window.location.pathname.indexOf(repoName + "/")
+  return repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + (repoName + "/").length)
+}
 
 window.addEventListener("load", () => {
   // do nothing if this library is being loaded inside itself
   if (window.frameElement && window.frameElement.classList.contains('unbreakable-links')) { return }
   
   const commitHashInURL = new URLSearchParams(window.location.search).get("version")
+  
   const repoPath = repoPathFromScriptAttribute()
   if (!repoPath || !repoPath.includes("/")) {
     throw new Error('You need to add a repoPath="" attribute with a valid github repo path to the <script> tag that contains this library. For example for http://github.com/stevekrouse/unbreakable-links, it would be repoPath="stevekrouse/unbreakable-links".') 
   }
-  const [userName, repoName] = repoPath.split("/")
-  const repoNameIndexInURLPath = window.location.pathname.indexOf(repoName + "/")
-  const filePath = repoNameIndexInURLPath == -1 ? window.location.pathname : window.location.pathname.substring(repoNameIndexInURLPath + repoName.length + 1)
+  
+  const filePath = filePathFromRepoPath(repoPath)
 
-  const requests = [getMostRecentCommits(repoPath), getMostRecentCommits(repoPath, filePath), getFileExistsNow(repoPath, filePath)]
-  Promise.all(requests).then(([mostRecentCommits, mostRecentFileCommits, fileExists]) => {
-    if (mostRecentFileCommits.length === 0) {
+  const requests = [
+    getMostRecentCommits(repoPath), 
+    getMostRecentCommits(repoPath, filePath), 
+    getFileExistsNow(repoPath, filePath)
+  ]
+  Promise.all(requests).then(([
+    mostRecentCommits, 
+    mostRecentFileCommits, 
+    fileExistsNow
+  ]) => {
+    const fileNeverExisted = mostRecentFileCommits.length === 0
+    const mostRecentCommitHash = mostRecentCommits[0].sha
+    const mostRecentFileCommitHash = mostRecentFileCommits[0].sha
+    const mostRecentFileCommitHashBeforeDeletion = mostRecentFileCommits.length > 1 && mostRecentFileCommits[1].sha
+    const commitHashInURLOldForPage = mostRecentFileCommits.map(c => c.sha).includes(commitHashInURL) && commitHashInURL != mostRecentFileCommitHash
+    const commitHashInURLOldForSite = commitHashInURL != mostRecentCommitHash
+
+    if (fileNeverExisted) {
       showBanner(repoPath, filePath, "FILE-NEVER-EXISTED")
-    } else {
-      if (fileExists) {
-        const mostRecentCommitHash = mostRecentCommits[0].sha
-        const mostRecentFileCommitHash = mostRecentFileCommits[0].sha
-        if (!commitHashInURL) {
-          putCommitHashInURL(mostRecentCommitHash)
-          load(repoPath, filePath, mostRecentCommitHash)
-          showBanner(repoPath, filePath, "UP-TO-DATE")
-        } else if (commitHashInURL != mostRecentFileCommitHash && !mostRecentCommits.slice(mostRecentCommits.map(c => c.sha).indexOf(mostRecentFileCommitHash)).includes(commitHashInURL)) {
-          load(repoPath, filePath, commitHashInURL)
-          showBanner(repoPath, filePath, "NEWER-VERSION-AVAILABLE")
-        } else {
-          // we load even when we technically don't need to here for consistancy
-          load(repoPath, filePath, commitHashInURL)
-          showBanner(repoPath, filePath, "UP-TO-DATE")
-        }
-      } else {
-        const mostRecentCommitHash = mostRecentCommits[1].sha
-        putCommitHashInURL(mostRecentCommitHash)
-        load(repoPath, filePath, mostRecentCommitHash)
-        // TODO check if this is there is a more recent version
-        showBanner(repoPath, filePath, "DELETED")
-      } 
+      return
+    }
+    
+    if (fileExistsNow && !commitHashInURL) {
+      putCommitHashInURL(mostRecentCommitHash)
+      load(repoPath, filePath, mostRecentCommitHash)
+      showBanner(repoPath, filePath, "UP-TO-DATE")
+      return
+    }
+  
+    if (fileExistsNow && commitHashInURL && commitHashInURLOldForPage) {
+      load(repoPath, filePath, commitHashInURL)
+      showBanner(repoPath, filePath, "NEWER-VERSION-PAGE-AVAILABLE", mostRecentFileCommitHash)
+      return
+    }
+    
+    if (fileExistsNow && commitHashInURL && !commitHashInURLOldForPage && commitHashInURLOldForSite) {
+      load(repoPath, filePath, commitHashInURL)
+      showBanner(repoPath, filePath, "NEWER-VERSION-SITE-AVAILABLE", mostRecentCommitHash)
+      return
+    }
+    
+    if (fileExistsNow && commitHashInURL && commitHashInURL == mostRecentCommitHash) {
+      // we load even when we technically don't need to here for consistancy
+      load(repoPath, filePath, commitHashInURL)
+      showBanner(repoPath, filePath, "UP-TO-DATE")
+      return
+    }
+
+    if (!fileNeverExisted && !fileExistsNow && !commitHashInURL) {
+      putCommitHashInURL(mostRecentFileCommitHashBeforeDeletion)
+      load(repoPath, filePath, mostRecentFileCommitHashBeforeDeletion)
+      showBanner(repoPath, filePath, "DELETED-MOST-RECENT")
+    }
+    
+    if (!fileNeverExisted && !fileExistsNow && commitHashInURL && commitHashInURL == mostRecentFileCommitHashBeforeDeletion) {
+      load(repoPath, filePath, mostRecentFileCommitHashBeforeDeletion)
+      showBanner(repoPath, filePath, "DELETED-MOST-RECENT")
+      return
+    }
+
+    if (!fileNeverExisted && !fileExistsNow && commitHashInURL !== mostRecentFileCommitHashBeforeDeletion) {
+      load(repoPath, filePath, mostRecentFileCommitHashBeforeDeletion)
+      showBanner(repoPath, filePath, "NEWER-VERSION-DELETED-AVAILABLE", mostRecentFileCommitHashBeforeDeletion)
+      return
     }
   })
-
 })
