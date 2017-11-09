@@ -29,7 +29,7 @@ const putCommitHashInURL = commitHash => {
   const searchParams = new URLSearchParams()
   searchParams.set("version", commitHash)
   const urlWithoutSearch = window.location.toString().replace(window.location.search, "")
-  const newURL = urlWithoutSearch + searchParams.toString()
+  const newURL = urlWithoutSearch + "?" + searchParams.toString()
   window.history.replaceState({}, null, newURL) // so as to now cause page to reload
 }
 
